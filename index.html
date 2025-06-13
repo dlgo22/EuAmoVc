@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Eu te amo</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: rgb(0, 0, 0);
+      font-family: sans-serif;
+      height: 100%;
+      width: 100%;
+    }
+
+    .word {
+      position: absolute;
+      white-space: nowrap;
+      color: rgb(225, 0, 255);
+      font-size: 20px;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 2px rgb(255, 0, 255));
+    }
+
+    .trail {
+      opacity: 0.3; 
+    }
+
+    .main {
+      opacity: 1;
+    }
+
+    .message {
+      position: absolute;
+      color: rgb(255, 0, 255);
+      font-size: 24px;
+      opacity: 0;
+      animation: fadeInOut 2.5s ease forwards;
+      pointer-events: none;
+      z-index: 10;
+      text-shadow: 0 0 10px rgb(255, 192, 203);
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: scale(0.8); }
+      10% { opacity: 1; transform: scale(1.1); }
+      90% { opacity: 1; }
+      100% { opacity: 0; transform: scale(1); }
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+
+<audio id="bgm" loop>
+  <source src="papoulas.mp3" type="audio/mpeg">
+</audio>
+
+<canvas id="explosionCanvas"></canvas>
+
+<script>
+  function createFallingTextWithTrail() {
+    const x = Math.random() * window.innerWidth;
+    const duration = 5000; 
+    const trailCount = 10;
+    const offset = 10;
+
+    for (let i = 0; i < trailCount; i++) {
+      const el = document.createElement('div');
+      el.className = 'word trail';
+      el.textContent = 'Eu te amo';
+      el.style.left = x + 'px';
+      el.style.top = '-50px';
+      el.style.opacity = 0.15 + 0.05 * i; 
+      el.style.filter = `blur(${(trailCount - i) * 0.4}px)`;
+      document.body.appendChild(el);
+      animateFall(el, i * 100, duration + i * 100);
+    }
+
+    const main = document.createElement('div');
+    main.className = 'word main';
+    main.textContent = 'Eu te amo';
+    main.style.left = x + 'px';
+    main.style.top = '-50px';
+    document.body.appendChild(main);
+    animateFall(main, 0, duration);
+  }
+
+  function animateFall(el, delay, duration) {
+    setTimeout(() => {
+      const start = performance.now();
+      const startTop = -50;
+
+      function fall(time) {
+        let elapsed = time - start;
+        let progress = elapsed / duration;
+        if (progress > 1) progress = 1;
+
+        const newTop = startTop + (window.innerHeight + 50) * progress;
+        el.style.top = newTop + 'px';
+
+        if (progress < 1) {
+          requestAnimationFrame(fall);
+        } else {
+          el.remove();
+        }
+      }
+
+      requestAnimationFrame(fall);
+    }, delay);
+  }
+
+  setInterval(createFallingTextWithTrail, 120);
+
+  const canvas = document.getElementById('explosionCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  let particles = [];
+
+  function createExplosion(x, y) {
+    for (let i = 0; i < 60; i++) {
+      particles.push({
+        x, y,
+        radius: 2 + Math.random() * 3,
+        dx: (Math.random() - 0.5) * 10,
+        dy: (Math.random() - 0.5) * 10,
+        alpha: 1
+      });
+    }
+  }
+
+  function animateParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach((p, i) => {
+      p.x += p.dx;
+      p.y += p.dy;
+      p.alpha -= 0.02;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,0,255,${p.alpha})`;
+      ctx.fill();
+      if (p.alpha <= 0) particles.splice(i, 1);
+    });
+    requestAnimationFrame(animateParticles);
+  }
+  animateParticles();
+
+  function showMessage(x, y) {
+    const msg = document.createElement('div');
+    msg.className = 'message';
+    msg.textContent = 'Você é minha vida';
+    msg.style.left = (x - 80) + 'px';
+    msg.style.top = (y - 40) + 'px';
+    document.body.appendChild(msg);
+    setTimeout(() => msg.remove(), 2500);
+  }
+
+  const bgm = document.getElementById('bgm');
+  let started = false;
+
+  window.addEventListener('click', (e) => {
+    if (!started) {
+      bgm.play();
+      started = true;
+    }
+
+    createExplosion(e.clientX, e.clientY);
+    showMessage(e.clientX, e.clientY);
+  });
+
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+</script>
+
+</body>
+</html>
